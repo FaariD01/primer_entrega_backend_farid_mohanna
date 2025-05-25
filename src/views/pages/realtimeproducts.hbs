@@ -1,0 +1,71 @@
+<h1>Productos en Tiempo Real</h1>
+
+<ul>
+  {{#each products}}
+    <li>
+      <strong>{{this.title}}</strong> - ${{this.price}} <br>
+      ID: {{this.id}} <br>
+      Descripción: {{this.description}}
+    </li>
+  {{/each}}
+</ul>
+
+<form id="product-form">
+  <input type="text" name="title" placeholder="Título" required />
+  <input type="text" name="description" placeholder="Descripción" required />
+  <input type="text" name="code" placeholder="Código" required />
+  <input type="number" name="price" placeholder="Precio" required />
+  <input type="text" name="status" placeholder="Estado (ej: true)" required />
+  <input type="number" name="stock" placeholder="Stock" required />
+  <input type="text" name="category" placeholder="Categoría" required />
+  <input type="text" name="thumbnails" placeholder="Thumbnails (ej: URL)" required />
+  <button type="submit">Agregar producto</button>
+</form>
+
+<form id="delete-form">
+  <input type="number" name="pid" placeholder="ID del producto a eliminar" required />
+  <button type="submit">Eliminar producto</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  // Solicita los productos al conectarse
+  socket.emit('getProducts');
+
+  // Escucha la actualización de productos
+  socket.on('productsUpdated', products => {
+    const list = document.getElementById('product-list');
+    list.innerHTML = '';
+    products.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.title} - $${p.price}`;
+      list.appendChild(li);
+    });
+  });
+
+  // Formulario para agregar productos
+  const form = document.getElementById('product-form');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+    socket.emit('newProduct', {
+      ...data,
+      price: parseFloat(data.price),
+      stock: parseInt(data.stock),
+      status: data.status === 'true',
+      thumbnails: [data.thumbnails]
+    });
+    form.reset();
+  });
+
+  // Formulario para eliminar productos
+  const deleteForm = document.getElementById('delete-form');
+  deleteForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const pid = parseInt(new FormData(deleteForm).get('pid'));
+    socket.emit('deleteProduct', pid);
+    deleteForm.reset();
+  });
+</script>

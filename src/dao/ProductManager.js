@@ -7,13 +7,14 @@ class ProductManager {
 
     // Método para obtener todos los productos
     async getProducts() {
-        try {
-            const data = await fs.promises.readFile(this.path, 'utf-8');
-            return JSON.parse(data);
-        } catch (error) {
-            console.error("Error al leer el archivo:", error);
-            return [];
-        }
+  try {
+    const data = await fs.promises.readFile(this.path, 'utf-8');
+    
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error al leer productos:', error);
+    return [];
+  }
     }
 
 // Agregar un nuevo producto

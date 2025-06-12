@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Carrito de Compras</title>
+  <link rel="stylesheet" href="../../public/cartView.css" />
+</head>
+<body>
+  <h1>Carrito de Compras</h1>
+
+  {{#if cart.products.length}}
+    {{#each cart.products}}
+      <div class="product-item" data-productid="{{this.product._id}}">
+        <h3>{{this.product.title}}</h3>
+        <p>{{this.product.description}}</p>
+        <p>Precio: ${{this.product.price}}</p>
+        <p>Cantidad: {{this.quantity}}</p>
+
+        <!-- Botón para eliminar producto -->
+        <button class="btn-remove" data-productid="{{this.product._id}}">
+          Eliminar producto
+        </button>
+      </div>
+    {{/each}}
+  {{else}}
+    <p>El carrito está vacío.</p>
+  {{/if}}
+
+  <script>
+    // Script para manejar eliminación producto
+    document.querySelectorAll('.btn-remove').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const pid = e.target.dataset.productid;
+        const cid = "{{cart._id}}";
+
+        if (!confirm('¿Eliminar este producto del carrito?')) return;
+
+        try {
+          const res = await fetch(`/api/carts/${cid}/products/${pid}`, {
+            method: 'DELETE',
+          });
+          if (res.ok) {
+            alert('Producto eliminado');
+            window.location.reload(); // recarga para ver cambios
+          } else {
+            alert('Error al eliminar producto');
+          }
+        } catch (error) {
+          alert('Error en la conexión');
+          console.error(error);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,13 +1,19 @@
-<h1>Lista de Productos</h1>
-
-<p>Total: {{products.length}}</p>
-
-<ul>
-  {{#each products}}
-    <li>
-      <strong>{{this.title}}</strong> - ${{this.price}} <br>
-      ID: {{this.id}} <br>
-      Descripción: {{this.description}}
-    </li>
-  {{/each}}
-</ul>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inicio</title>
+  <link rel="stylesheet" href="../../public/home.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Bienvenido</h1>
+    <button class="btn btn-products" onclick="window.location.href='/realtimeproducts'">
+      Ver productos en tiempo real
+    </button>
+    <button class="btn btn-cart" onclick="window.location.href='/api/carts/684a1a8a1f4c063e1d212b31'">
+      Ver carrito
+    </button>
+  </div>
+</body>
+</html>

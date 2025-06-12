@@ -3,17 +3,21 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { engine } = require('express-handlebars');
 const path = require('path');
+const Product = require('./models/Product');
 
 const productsRouter = require('./routes/products.router.js');
 const cartsRouter = require('./routes/carts.router.js');
 const viewsRouter = require('./routes/views.router.js');
 const ProductManager = require('./dao/ProductManager.js');
+const connectDB = require('./db');
+connectDB(); // Establece la conexión a MongoDB
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
-const productManager = new ProductManager(path.join(__dirname, 'data', 'products.json'));
+const productManager = require('./dao/ProductManager'); // ajustá la ruta si hace falta
+
 
 // Middlewares
 app.use(express.json());
@@ -43,22 +47,59 @@ app.use('/', viewsRouter);
 io.on('connection', socket => {
   console.log('Cliente conectado');
 
-  socket.on('getProducts', async () => {
-    const products = await productManager.getProducts();
-    socket.emit('productsUpdated', products);
+  socket.on('getProducts', async ({ limit = 10, page = 1, sort, query } = {}) => {
+    try {
+      const filter = query
+        ? {
+            $or: [
+              { category: { $regex: query, $options: 'i' } },
+              { title: { $regex: query, $options: 'i' } }
+            ]
+          }
+        : {};
+
+      const options = {
+        limit: parseInt(limit),
+        page: parseInt(page),
+        sort: sort === 'asc' ? { price: 1 } : sort === 'desc' ? { price: -1 } : undefined
+      };
+
+      const result = await Product.paginate(filter, options);
+
+      socket.emit('productsUpdated', {
+        status: 'success',
+        payload: result.docs,
+        totalPages: result.totalPages,
+        prevPage: result.hasPrevPage ? result.prevPage : null,
+        nextPage: result.hasNextPage ? result.nextPage : null,
+        page: result.page,
+        hasPrevPage: result.hasPrevPage,
+        hasNextPage: result.hasNextPage
+      });
+    } catch (err) {
+      socket.emit('productsUpdated', { status: 'error', message: 'Error al obtener productos' });
+    }
   });
 
   socket.on('newProduct', async product => {
-    await productManager.addProduct(product);
-    const updatedProducts = await productManager.getProducts();
-    io.emit('productsUpdated', updatedProducts);
+    try {
+      await Product.create(product);
+      const updatedProducts = await Product.find().lean();
+      io.emit('productsUpdated', updatedProducts);
+    } catch (err) {
+      console.error('Error al agregar producto:', err.message);
+    }
   });
 
   socket.on('deleteProduct', async pid => {
-    await productManager.deleteProduct(pid);
-    const updatedProducts = await productManager.getProducts();
-    io.emit('productsUpdated', updatedProducts);
+    try {
+      await Product.findByIdAndDelete(pid);
+      const updatedProducts = await Product.find().lean();
+      io.emit('productsUpdated', updatedProducts);
+    } catch (err) {
+      console.error('Error al eliminar producto:', err.message);
+    }
   });
 });
 
-module.exports = httpServer;
+module.exports = { app, httpServer };

@@ -1,71 +1,176 @@
-<h1>Productos en Tiempo Real</h1>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Productos</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="../../public/style.css" />
+</head>
+<body>
+  <h1>LISTADO DE PRODUCTOS</h1>
 
-<ul>
-  {{#each products}}
-    <li>
-      <strong>{{this.title}}</strong> - ${{this.price}} <br>
-      ID: {{this.id}} <br>
-      Descripción: {{this.description}}
-    </li>
-  {{/each}}
-</ul>
+  <div id="filters">
+    <input id="search-input" type="text" placeholder="Buscar por categoría o título" />
+    <select id="sort-select">
+      <option value="">Ordenar por precio</option>
+      <option value="asc">Ascendente</option>
+      <option value="desc">Descendente</option>
+    </select>
+  </div>
 
-<form id="product-form">
-  <input type="text" name="title" placeholder="Título" required />
-  <input type="text" name="description" placeholder="Descripción" required />
-  <input type="text" name="code" placeholder="Código" required />
-  <input type="number" name="price" placeholder="Precio" required />
-  <input type="text" name="status" placeholder="Estado (ej: true)" required />
-  <input type="number" name="stock" placeholder="Stock" required />
-  <input type="text" name="category" placeholder="Categoría" required />
-  <input type="text" name="thumbnails" placeholder="Thumbnails (ej: URL)" required />
-  <button type="submit">Agregar producto</button>
-</form>
+  <div id="products-container">
+    <p>Cargando productos...</p>
+  </div>
 
-<form id="delete-form">
-  <input type="number" name="pid" placeholder="ID del producto a eliminar" required />
-  <button type="submit">Eliminar producto</button>
-</form>
+  <div id="pagination">
+    <button id="prev-btn" disabled>Anterior</button>
+    <span id="page-info"></span>
+    <button id="next-btn" disabled>Siguiente</button>
+  </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
+  <form id="product-form">
+    <h2>Agregar nuevo producto</h2>
+    <input type="text" name="title" placeholder="Título" required />
+    <input type="text" name="description" placeholder="Descripción" required />
+    <input type="text" name="code" placeholder="Código" required />
+    <input type="number" name="price" placeholder="Precio" required />
+    <input type="text" name="status" placeholder="Estado (ej: true)" required />
+    <input type="number" name="stock" placeholder="Stock" required />
+    <input type="text" name="category" placeholder="Categoría" required />
+    <input type="text" name="thumbnails" placeholder="Thumbnails (ej: URL)" required />
+    <button type="submit">Agregar producto</button>
+  </form>
 
-  // Solicita los productos al conectarse
-  socket.emit('getProducts');
+  <form id="delete-form">
+    <h2>Eliminar producto</h2>
+    <input type="text" name="pid" placeholder="ID del producto a eliminar" required />
+    <button type="submit">Eliminar producto</button>
+  </form>
 
-  // Escucha la actualización de productos
-  socket.on('productsUpdated', products => {
-    const list = document.getElementById('product-list');
-    list.innerHTML = '';
-    products.forEach(p => {
-      const li = document.createElement('li');
-      li.textContent = `${p.title} - $${p.price}`;
-      list.appendChild(li);
+  <script>
+    const socket = io();
+
+    let currentPage = 1;
+    let currentLimit = 10;
+    let currentSort = '';
+    let currentQuery = '';
+
+    const productsContainer = document.getElementById('products-container');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const pageInfo = document.getElementById('page-info');
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+
+    const carritoId = '684a18e70a7676a42f01dff3'; // Carrito fijo
+
+    function agregarAlCarrito(productId) {
+      fetch('/api/carts/products/' + productId, { method: 'POST' })
+      .then(res => {
+        if (res.ok) {
+          alert('Producto agregado al carrito');
+        } else {
+          alert('Error al agregar el producto al carrito');
+        }
+      })
+      .catch(() => {
+        alert('Error de conexión al servidor');
+      });
+    }
+
+    function renderProducts(products) {
+      if (!products || products.length === 0) {
+        productsContainer.innerHTML = '<p>No hay productos para mostrar</p>';
+        return;
+      }
+      productsContainer.innerHTML = products
+        .map(product => `
+          <div>
+            <h3>${product.title}</h3>
+            <p><strong>ID:</strong> ${product._id}</p>
+            <p>${product.description}</p>
+            <p><strong>Precio:</strong> $${product.price}</p>
+            <p><strong>Categoría:</strong> ${product.category}</p>
+            <button class="add-to-cart-btn" data-id="${product._id}">Agregar al carrito</button>
+          </div>
+        `).join('');
+
+      document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const productId = button.getAttribute('data-id');
+          agregarAlCarrito(productId);
+        });
+      });
+    }
+
+    function loadProducts() {
+      socket.emit('getProducts', {
+        limit: currentLimit,
+        page: currentPage,
+        sort: currentSort,
+        query: currentQuery
+      });
+    }
+
+    socket.on('productsUpdated', data => {
+      if (data.status === 'success') {
+        renderProducts(data.payload);
+        pageInfo.textContent = `Página ${data.page} de ${data.totalPages}`;
+        prevBtn.disabled = !data.hasPrevPage;
+        nextBtn.disabled = !data.hasNextPage;
+      } else {
+        productsContainer.innerHTML = `<p>Error al cargar productos: ${data.message}</p>`;
+      }
     });
-  });
 
-  // Formulario para agregar productos
-  const form = document.getElementById('product-form');
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(form).entries());
-    socket.emit('newProduct', {
-      ...data,
-      price: parseFloat(data.price),
-      stock: parseInt(data.stock),
-      status: data.status === 'true',
-      thumbnails: [data.thumbnails]
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadProducts();
+      }
     });
-    form.reset();
-  });
+    nextBtn.addEventListener('click', () => {
+      currentPage++;
+      loadProducts();
+    });
 
-  // Formulario para eliminar productos
-  const deleteForm = document.getElementById('delete-form');
-  deleteForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const pid = parseInt(new FormData(deleteForm).get('pid'));
-    socket.emit('deleteProduct', pid);
-    deleteForm.reset();
-  });
-</script>
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        currentQuery = searchInput.value.trim();
+        currentPage = 1;
+        loadProducts();
+      }
+    });
+
+    sortSelect.addEventListener('change', () => {
+      currentSort = sortSelect.value;
+      currentPage = 1;
+      loadProducts();
+    });
+
+    const form = document.getElementById('product-form');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      socket.emit('newProduct', {
+        ...data,
+        price: parseFloat(data.price),
+        stock: parseInt(data.stock),
+        status: data.status === 'true',
+        thumbnails: [data.thumbnails]
+      });
+      form.reset();
+    });
+
+    const deleteForm = document.getElementById('delete-form');
+    deleteForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const pid = new FormData(deleteForm).get('pid');
+      socket.emit('deleteProduct', pid);
+      deleteForm.reset();
+    });
+
+    loadProducts();
+  </script>
+</body>
+</html>

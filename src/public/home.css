@@ -1,0 +1,49 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f2f5;
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.container {
+  text-align: center;
+  background: white;
+  padding: 3rem 4rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  width: 320px;
+}
+h1 {
+  margin-bottom: 2rem;
+  color: #333;
+  font-weight: 700;
+}
+.btn {
+  display: block;
+  width: 100%;
+  padding: 1rem 0;
+  margin: 1rem 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  color: white;
+  text-decoration: none;
+  user-select: none;
+}
+.btn-products {
+  background-color: #007bff;
+}
+.btn-products:hover {
+  background-color: #0056b3;
+}
+.btn-cart {
+  background-color: #28a745;
+}
+.btn-cart:hover {
+  background-color: #1e7e34;
+}

@@ -12,6 +12,7 @@
     {{#each cart.products}}
       <div class="product-item" data-productid="{{this.product._id}}">
         <h3>{{this.product.title}}</h3>
+        <p><strong>ID del producto:</strong> {{this.product._id}}</p>  <!-- Aquí agregué el ID -->
         <p>{{this.product.description}}</p>
         <p>Precio: ${{this.product.price}}</p>
         <p>Cantidad: {{this.quantity}}</p>
@@ -25,6 +26,7 @@
   {{else}}
     <p>El carrito está vacío.</p>
   {{/if}}
+<button id="btn-clear-cart">Vaciar carrito</button>
 
   <script>
     // Script para manejar eliminación producto
@@ -51,6 +53,29 @@
         }
       });
     });
+
+      document.getElementById('btn-clear-cart').addEventListener('click', async () => {
+    const cid = "{{cart._id}}";
+    if (!confirm('¿Está seguro que quiere vaciar todo el carrito?')) return;
+
+    try {
+      const res = await fetch(`/api/carts/${cid}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        alert('Carrito vaciado');
+        window.location.reload();
+      } else {
+        alert('Error al vaciar carrito');
+      }
+    } catch (error) {
+      alert('Error en la conexión');
+      console.error(error);
+    }
+  });
   </script>
+
+  
 </body>
 </html>

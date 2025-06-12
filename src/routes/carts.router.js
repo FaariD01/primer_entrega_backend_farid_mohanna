@@ -75,19 +75,19 @@ router.put('/:cid/products/:pid', async (req, res) => {
   }
 });
 
-// DELETE api/carts/:cid -> eliminar todos los productos del carrito
-router.delete('/:cid/products/:pid', async (req, res) => {
+// DELETE api/carts/:cid -> vaciar carrito
+router.delete('/:cid', async (req, res) => {
   try {
-    const { cid, pid } = req.params;
+    const { cid } = req.params;
     const cart = await Cart.findById(cid);
     if (!cart) return res.status(404).json({ message: 'Carrito no encontrado' });
 
-    cart.products = cart.products.filter(p => p.product.toString() !== pid);
-
+    cart.products = [];
     await cart.save();
-    res.json({ message: 'Producto eliminado del carrito', cart });
+
+    res.json({ message: 'Todos los productos eliminados del carrito', cart });
   } catch (err) {
-    res.status(500).json({ message: 'Error al eliminar producto del carrito', error: err.message });
+    res.status(500).json({ message: 'Error al vaciar carrito', error: err.message });
   }
 });
 

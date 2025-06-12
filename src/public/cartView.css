@@ -63,3 +63,27 @@ p {
   text-align: center;
   color: #888;
 }
+#btn-clear-cart {
+  background-color: #e74c3c;      /* rojo brillante */
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+  margin-top: 20px;
+}
+
+#btn-clear-cart:hover {
+  background-color: #c0392b;      /* rojo más oscuro al pasar el mouse */
+  box-shadow: 0 6px 12px rgba(192, 57, 43, 0.6);
+}
+
+#btn-clear-cart:active {
+  background-color: #a93226;      /* rojo aún más oscuro al hacer click */
+  box-shadow: none;
+  transform: translateY(2px);
+}
